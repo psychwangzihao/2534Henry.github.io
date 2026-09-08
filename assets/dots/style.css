@@ -46,13 +46,7 @@ html,body{
 }
 #fsbtn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);}
 
-/* ---- 提示 / 页脚 ---- */
-#hint{
-  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
-  font-size:12.5px;letter-spacing:.06em;color:var(--ink-dim);
-  z-index:5;user-select:none;pointer-events:none;text-align:center;
-  text-shadow:0 0 12px rgba(0,0,0,.6);white-space:nowrap;
-}
+/* ---- 页脚 ---- */
 #foot{
   position:fixed;right:24px;bottom:22px;
   font-size:10.5px;letter-spacing:.28em;color:rgba(143,164,204,.35);
@@ -182,7 +176,6 @@ html,body{
 
 @media (max-width:720px){
   #brand{font-size:10px;letter-spacing:.3em;top:16px;left:16px;}
-  #hint{font-size:10.5px;bottom:14px;}
   #foot{display:none;}
   #chapter .chnav{margin-top:34px;}
 }

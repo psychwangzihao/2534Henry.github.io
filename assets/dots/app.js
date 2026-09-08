@@ -55,7 +55,6 @@ const HUB = {
 };
 
 const COPY = {
-  hintChapter: '点星进入 · ← → 换章 · Esc 回网络',
   locked: '先把五颗星都点亮，再来唤醒意识',
 };
 
@@ -65,7 +64,6 @@ const ctx = cv.getContext('2d');
 
 const chapterEl = document.getElementById('chapter');
 const finaleEl  = document.getElementById('finale');
-const hintEl    = document.getElementById('hint');
 const toastEl   = document.getElementById('toast');
 const chIdx  = document.getElementById('chIdx');
 const chWord = document.getElementById('chWord');
@@ -193,7 +191,6 @@ function openChapter(i) {
   }
   screen = 'chapter';
   chapterEl.classList.add('on');
-  syncChrome();
 }
 
 function renderLogo(s) {
@@ -230,7 +227,6 @@ function closeChapter() {
   screen = 'net';
   chapterIdx = -1;
   chapterEl.classList.remove('on');
-  syncChrome();
 }
 
 function goToChapter(i) {
@@ -259,17 +255,12 @@ function nav(delta) {
   }
 }
 
-function syncChrome() {
-  hintEl.style.opacity = (screen === 'net' && !finale.done) ? 1 : 0;
-}
-
 function runFinale() {
   if (screen === 'finale') return;
   screen = 'finale';
   chapterEl.classList.remove('on');
   finale.t0 = performance.now();
   finale.done = false;
-  syncChrome();
   // 从中心向外一圈发射汇聚粒子
   parts = [];
   const d = Math.min(W, H);
