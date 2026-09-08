@@ -373,9 +373,27 @@ function renderGroup(g) {
     g6EnBuilt = false;
     g6Beat = 0;
   } else {
-    // 普通组：切换当拍整组浮现（无 150ms+380ms 逐行延迟，避免比音乐晚）
-    [...fVerse.children].forEach(el => el.classList.add('vis'));
+    // 普通组：文字逐行浮现由 updateVerseReveal 依 Block 节奏点亮（此处保持隐藏）
   }
+}
+
+/* 普通组（前 5 章）逐行点亮：章节时长均分 4 个 Block
+   line0 在第 1 Block（切章即现，与 logo 同拍）
+   line1 在第 2 Block
+   line2 在第 3、4 Block */
+function updateVerseReveal() {
+  const g = finale.grp;
+  const grp = FINALE_GROUPS[g];
+  if (!grp || grp.special) return;
+  const start = MUSIC.GROUP_START[g];
+  const end = (g + 1 < MUSIC.GROUP_START.length) ? MUSIC.GROUP_START[g + 1] : MUSIC.TOTAL;
+  const dur = Math.max(0.1, end - start);
+  const t = Math.max(0, finaleClock() - start);
+  let want = 1;
+  if (t >= dur * 0.25) want = 2;
+  if (t >= dur * 0.5) want = 3;
+  const lines = fVerse.children;
+  for (let i = 0; i < lines.length; i++) lines[i].classList.toggle('vis', i < want);
 }
 
 // 第 6 组：逐行点亮（tick 0/1/2 → 第 1/2/3 行；英文/字由 drawGroup6 依配乐时钟处理）
@@ -584,6 +602,8 @@ function drawFinale(now) {
       finale.grp = tgt;
       renderGroup(tgt);
     }
+    // 普通组文字逐行浮现（前 5 章按 Block 节奏），第 6 组走 drawGroup6
+    if (!FINALE_GROUPS[finale.grp].special) updateVerseReveal();
   }
   const grp = FINALE_GROUPS[finale.grp] || FINALE_GROUPS[0];
   // 背后常驻：一团温柔光晕（前 5 组）
