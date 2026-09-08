@@ -86,9 +86,29 @@ html,body{
   font-size:14px;letter-spacing:.5em;color:rgba(0,242,254,.75);
   margin-bottom:20px;font-weight:600;
 }
-#chapter .wname{
-  font-size:16px;letter-spacing:.5em;color:var(--ink-dim);
-  margin-bottom:26px;
+#chapter .logoarea{
+  display:flex;align-items:center;justify-content:center;
+  min-height:74px;margin-bottom:18px;
+}
+#chapter .logoarea .plaque{
+  display:flex;align-items:center;justify-content:center;
+  height:74px;padding:0 18px;border-radius:14px;
+}
+#chapter .logoarea .plaque.light{
+  background:rgba(255,255,255,.94);
+  box-shadow:0 0 0 1px rgba(255,255,255,.4), 0 8px 34px rgba(6,20,60,.45);
+}
+#chapter .logoarea .plaque.bare{
+  padding:0 8px;
+}
+#chapter .logoarea img{
+  max-height:52px;max-width:min(320px, 60vw);
+  width:auto;height:auto;object-fit:contain;display:block;
+}
+#chapter .logoarea .psi{
+  font-family:Georgia,"Times New Roman","Songti SC",serif;
+  font-size:60px;line-height:1;color:#0a0e1a;
+  font-weight:600;padding:0 8px;
 }
 #chapter .word{
   font-size:clamp(44px, 9vw, 128px);
@@ -110,7 +130,16 @@ html,body{
   font-size:clamp(18px,2.6vw,26px);color:#dfe9ff;letter-spacing:.12em;
   min-height:1.5em;
 }
-.chnav{display:flex;gap:14px;justify-content:center;margin-top:52px;flex-wrap:wrap;}
+#chapter .site{
+  margin-top:20px;font-size:13px;letter-spacing:.06em;
+}
+#chapter .site a{
+  color:#8fb8ff;text-decoration:none;
+  border-bottom:1px dashed rgba(143,184,255,.5);
+  padding-bottom:2px;transition:.2s;
+}
+#chapter .site a:hover{color:#fff;border-bottom-color:#fff;}
+.chnav{display:flex;gap:14px;justify-content:center;margin-top:40px;flex-wrap:wrap;}
 .ghost{
   font-family:inherit;font-size:13.5px;letter-spacing:.1em;color:var(--ink-dim);
   background:transparent;border:1px solid rgba(255,255,255,.16);

@@ -13,12 +13,38 @@
 'use strict';
 
 /* ----------------------- 可编辑内容 ----------------------- */
+// logo: { src, plaque:'light'|'bare' } 在章节卡片顶部显示一个徽标；psi:true 显示希腊字母 Ψ
+// site: 官方链接（可选）。改这里即可。
 const SATELLITES = [
-  { label: '浙大',   idx: '01', word: '学科交叉',  en: 'ZJU · WHY ZHEJIANG',      sub: '清北已成清北 · 浙大正在成为浙大', hue: 200 },
-  { label: '心理学', idx: '02', word: '广博',       en: 'PSYCHOLOGY',              sub: '最好的学科，只是在中国它还"尚未成为"自己', hue: 255 },
-  { label: '2050',   idx: '03', word: '团聚',       en: '2050 GATHERING',          sub: '自愿 · 年青 · 科技 · 团聚', hue: 170 },
-  { label: '牛津',   idx: '04', word: '换一个语境',  en: 'OXFORD',                 sub: '轻装前行 · 只为真正交流', hue: 218 },
-  { label: 'CO-LAB', idx: '05', word: '跨出边界',    en: 'LINKING ACROSS BOUNDARIES', sub: '意识科学 · 跨学科小组', hue: 285 },
+  {
+    label: '浙大', idx: '01', word: '学科交叉', en: 'ZJU · WHY ZHEJIANG',
+    sub: '清北已成清北 · 浙大正在成为浙大', hue: 200,
+    logo: { src: './logos/zju-emblem.png', plaque: 'light' },
+    site: { url: 'https://www.zju.edu.cn', text: 'zju.edu.cn ↗' },
+  },
+  {
+    label: '心理学', idx: '02', word: '广博', en: 'PSYCHOLOGY',
+    sub: '最好的学科，只是在中国它还"尚未成为"自己', hue: 255,
+    psi: true,
+    site: { url: 'https://www.psych.zju.edu.cn/', text: 'psych.zju.edu.cn ↗' },
+  },
+  {
+    label: '2050', idx: '03', word: '团聚', en: '2050 GATHERING',
+    sub: '自愿 · 年青 · 科技 · 团聚', hue: 170,
+    logo: { src: './logos/2050.png', plaque: 'bare' },
+    site: { url: 'https://2050.org.cn', text: '2050.org.cn ↗' },
+  },
+  {
+    label: '牛津', idx: '04', word: '换一个语境', en: 'OXFORD',
+    sub: '轻装前行 · 只为真正交流', hue: 218,
+    site: { url: 'https://www.ox.ac.uk', text: 'ox.ac.uk ↗' },
+  },
+  {
+    label: 'CO-LAB', idx: '05', word: '跨出边界', en: 'LINKING ACROSS BOUNDARIES',
+    sub: '意识科学 · 跨学科小组', hue: 285,
+    logo: { src: './logos/colab.png', plaque: 'light' },
+    site: { url: 'https://consciousness-observers.github.io', text: 'consciousness-observers.github.io ↗' },
+  },
 ];
 
 const HUB = {
@@ -42,10 +68,11 @@ const finaleEl  = document.getElementById('finale');
 const hintEl    = document.getElementById('hint');
 const toastEl   = document.getElementById('toast');
 const chIdx  = document.getElementById('chIdx');
-const chName = document.getElementById('chName');
 const chWord = document.getElementById('chWord');
 const chEn   = document.getElementById('chEn');
 const chSub  = document.getElementById('chSub');
+const chLogoArea = document.getElementById('chLogoArea');
+const chSite     = document.getElementById('chSite');
 
 let W = 0, H = 0, DPR = 1, CX = 0, CY = 0;
 
@@ -154,10 +181,11 @@ function openChapter(i) {
   cursor = i;
   const s = SATELLITES[i];
   chIdx.textContent  = s.idx + ' / ' + String(NUM).padStart(2, '0');
-  chName.textContent = s.label;
   chWord.textContent = s.word;
   chEn.textContent   = s.en;
   chSub.textContent  = s.sub || '';
+  renderLogo(s);
+  renderSite(s);
   if (!visited[i]) {
     visited[i] = true;
     visitedAt[i] = performance.now();
@@ -166,6 +194,36 @@ function openChapter(i) {
   screen = 'chapter';
   chapterEl.classList.add('on');
   syncChrome();
+}
+
+function renderLogo(s) {
+  chLogoArea.innerHTML = '';
+  if (s.psi) {
+    const p = document.createElement('div');
+    p.className = 'plaque light';
+    p.innerHTML = '<span class="psi">Ψ</span>';
+    chLogoArea.appendChild(p);
+  } else if (s.logo && s.logo.src) {
+    const p = document.createElement('div');
+    p.className = 'plaque ' + (s.logo.plaque || 'bare');
+    const img = document.createElement('img');
+    img.src = s.logo.src;
+    img.alt = s.label || '';
+    p.appendChild(img);
+    chLogoArea.appendChild(p);
+  }
+}
+
+function renderSite(s) {
+  chSite.innerHTML = '';
+  if (s.site && s.site.url) {
+    const a = document.createElement('a');
+    a.href = s.site.url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = s.site.text || s.site.url;
+    chSite.appendChild(a);
+  }
 }
 
 function closeChapter() {
