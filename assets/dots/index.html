@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Connecting the Dots · Zihao Wang</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- 星空画布：节点与连线都在这里绘制 -->
+  <canvas id="cv"></canvas>
+
+  <!-- 品牌 -->
+  <header id="brand">CONNECTING&nbsp;THE&nbsp;DOTS</header>
+  <button id="fsbtn" title="全屏 / 退出全屏 (F)">⛶</button>
+
+  <!-- 章节面板（点星后浮现） -->
+  <div id="chapter">
+    <div class="veil"></div>
+    <div class="box">
+      <div class="idx" id="chIdx">01</div>
+      <div class="wname" id="chName">浙大</div>
+      <div class="word" id="chWord">学科交叉</div>
+      <div class="en" id="chEn">ZJU</div>
+      <div class="rule"></div>
+      <div class="sub" id="chSub">浙大正在成为浙大</div>
+      <nav class="chnav">
+        <button class="ghost" data-dir="-1">‹ 上一章</button>
+        <button class="ghost primary" id="backBtn">⌂ 回网络</button>
+        <button class="ghost" data-dir="1">下一章 ›</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- 终章面板（全网汇聚成光团后浮现） -->
+  <div id="finale">
+    <div class="veil dim"></div>
+    <div class="box">
+      <div class="fl1">一个神经元，什么都不是</div>
+      <div class="fl2">当它们连接起来——</div>
+      <div class="fl3">就是意识，就是你。</div>
+      <div class="tag">CONNECTING THE DOTS</div>
+      <button class="ghost restart" id="restartBtn">↺ 再看一遍</button>
+    </div>
+  </div>
+
+  <!-- 提示 & 页脚 -->
+  <div id="hint">点一颗星进入章节<br>五颗都点亮后，点中央金点收官</div>
+  <footer id="foot">Zihao Wang · Zhejiang University</footer>
+  <div id="toast" class="hidden"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
