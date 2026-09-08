@@ -52,8 +52,8 @@ ninja.data = [{
           section: "News",},{id: "news-invited-by-westlake-university-and-the-joint-academy-on-future-humanity-to-participate-in-the-future-civilization-sandbox-as-a-theme-advocate-leading-the-discussion-topic-decoding-social-interaction-what-ai-can-and-cannot-replace",
           title: 'Invited by Westlake University and the Joint Academy on Future Humanity to participate...',
           description: "",
-          section: "News",},{id: "news-preparing-an-interactive-talk-connecting-the-dots-for-the-incoming-cohort-of-the-department-of-psychology-zhejiang-university-an-interactive-visual-journey-across-interdisciplinary-science-the-2050-gathering-studying-abroad-and-consciousness-research",
-          title: 'Preparing an interactive talk, Connecting the Dots, for the incoming cohort of the...',
+          section: "News",},{id: "news-gave-an-interactive-talk-connecting-the-dots-to-the-incoming-cohort-of-the-department-of-psychology-zhejiang-university-an-interactive-visual-journey-across-interdisciplinary-science-the-2050-gathering-studying-abroad-and-consciousness-research",
+          title: 'Gave an interactive talk, Connecting the Dots, to the incoming cohort of the...',
           description: "",
           section: "News",},{
         id: 'social-cv',
