@@ -80,30 +80,35 @@ html,body{
   font-size:14px;letter-spacing:.5em;color:rgba(0,242,254,.75);
   margin-bottom:20px;font-weight:600;
 }
-#chapter .logoarea{
+#chapter .logoarea,#finale .logoarea{
   display:flex;align-items:center;justify-content:center;
   min-height:74px;margin-bottom:18px;
 }
-#chapter .logoarea .plaque{
+#chapter .logoarea .plaque,#finale .logoarea .plaque{
   display:flex;align-items:center;justify-content:center;
   height:74px;padding:0 18px;border-radius:14px;
 }
-#chapter .logoarea .plaque.light{
+#chapter .logoarea .plaque.light,#finale .logoarea .plaque.light{
   background:rgba(255,255,255,.94);
   box-shadow:0 0 0 1px rgba(255,255,255,.4), 0 8px 34px rgba(6,20,60,.45);
 }
-#chapter .logoarea .plaque.bare{
+#chapter .logoarea .plaque.bare,#finale .logoarea .plaque.bare{
   padding:0 8px;
 }
-#chapter .logoarea img{
+#chapter .logoarea img,#finale .logoarea img{
   max-height:52px;max-width:min(320px, 60vw);
   width:auto;height:auto;object-fit:contain;display:block;
 }
-#chapter .logoarea .psi{
+#chapter .logoarea .psi,#finale .logoarea .psi{
   font-family:Georgia,"Times New Roman","Songti SC",serif;
   font-size:60px;line-height:1;color:#0a0e1a;
   font-weight:600;padding:0 8px;
 }
+/* 终章主题徽章略小，避免挤压诗句 */
+#finale .logoarea{min-height:58px;margin-bottom:8px;}
+#finale .logoarea .plaque{height:58px;padding:0 14px;border-radius:12px;}
+#finale .logoarea img{max-height:40px;max-width:min(240px, 52vw);}
+#finale .logoarea .psi{font-size:44px;}
 #chapter .word{
   font-size:clamp(44px, 9vw, 128px);
   font-weight:700;letter-spacing:.06em;line-height:1.12;

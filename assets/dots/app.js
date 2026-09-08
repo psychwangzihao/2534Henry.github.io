@@ -51,20 +51,26 @@ const COPY = {
 };
 
 // 终章 6 组诗。每组三行。第 6 组 special（配合粒子特效 + 英文）。
+// theme：对应主题（0 浙大 / 1 心理学 / 2 2050 / 3 牛津·全球 / 4 CO-LAB）；第 6 组意识无 theme（不设 logo）。
 const FINALE_GROUPS = [
   {
+    theme: 0,
     lines: ['孤峰独秀，终有尽时；', '群峦连脉，方成峻极之势。', '浙大的天空，从不只容一颗星辰闪耀。'],
   },
   {
+    theme: 1,
     lines: ['一瓢饮，难解千般渴；', '万卷书，方筑大地基。', '人心本是万象，岂能只用一把尺丈量？'],
   },
   {
+    theme: 2,
     lines: ['孤灯下求解，万语千言皆困顿；', '不如围坐篝火旁，', '让不同星球的言语，碰撞成黎明的光。'],
   },
   {
+    theme: 3,
     lines: ['故土的辞藻再美，', '也须在他乡的语境里淬炼；', '冷眼或是热忱，跨出去便已是回响。'],
   },
   {
+    theme: 4,
     lines: ['一粒沙，无法抵挡潮汐的呼吸；', '万千石，方筑成彼岸的长堤。', '我们站在一起，便是群山移步的回音。'],
   },
   {
@@ -259,21 +265,27 @@ function openChapter(i) {
   requestAnimationFrame(() => fitWord());
 }
 
-function renderLogo(s) {
-  chLogoArea.innerHTML = '';
+function buildLogoEl(s) {
+  if (!s) return null;
+  const p = document.createElement('div');
   if (s.psi) {
-    const p = document.createElement('div');
     p.className = 'plaque light';
     p.innerHTML = '<span class="psi">Ψ</span>';
-    chLogoArea.appendChild(p);
-  } else if (s.logo && s.logo.src) {
-    const p = document.createElement('div');
+    return p;
+  }
+  if (s.logo && s.logo.src) {
     p.className = 'plaque ' + (s.logo.plaque || 'bare');
     const img = document.createElement('img');
     img.src = s.logo.src; img.alt = s.label || '';
     p.appendChild(img);
-    chLogoArea.appendChild(p);
+    return p;
   }
+  return null;
+}
+function renderLogo(s) {
+  chLogoArea.innerHTML = '';
+  const el = buildLogoEl(s);
+  if (el) chLogoArea.appendChild(el);
 }
 
 function renderSite(s) {
@@ -337,6 +349,15 @@ function renderGroup(g) {
   fVerse.innerHTML = '';
   fEn.innerHTML = ''; fEn.classList.remove('vis');
   fTag.classList.remove('vis');
+  // 终章主题徽章：theme 对应 SATELLITES；第 6 组（意识，无 theme）隐藏空位保持原样
+  const fLogoArea = document.getElementById('fLogoArea');
+  if (fLogoArea) {
+    fLogoArea.innerHTML = '';
+    const theme = (grp.theme != null && grp.theme < SATELLITES.length) ? SATELLITES[grp.theme] : null;
+    const el = buildLogoEl(theme);
+    if (el) { fLogoArea.appendChild(el); fLogoArea.style.display = ''; }
+    else fLogoArea.style.display = 'none';
+  }
   grp.lines.forEach((ln, li) => {
     const d = document.createElement('div');
     d.className = 'v-line' + (grp.warm != null && li === grp.warm ? ' warm' : '');
