@@ -103,6 +103,7 @@ const fEn    = document.getElementById('fEn');
 const fTag   = document.getElementById('fTag');
 const fAdv   = document.getElementById('fAdv');
 const restartBtn = document.getElementById('restartBtn');
+const bgm    = document.getElementById('bgm');
 
 let W = 0, H = 0, DPR = 1, CX = 0, CY = 0;
 
@@ -115,6 +116,41 @@ let screen = 'net';      // 'net' | 'chapter' | 'finale'
 let chapterIdx = -1;
 let cursor = -1;
 let finale = { phase: 'off', t0: 0, grp: -1, done: false };
+
+/* 配乐卡点（music.m4a，总长 53.6s）
+   视频白/黑屏只是节拍标记：
+     白 0.0–4.90s   光点汇聚（converge）
+     黑 4.90–10.87s 第 1 组诗
+     白 10.87–16.83s 第 2 组诗
+     黑 16.83–22.90s 第 3 组诗
+     白 22.90–29.10s 第 4 组诗
+     黑 29.10–35.00s 第 5 组诗
+     白 35.00–53.57s 第 6 组诗（神经元特效 + 英文，长尾）
+   各组开始时刻（相对音频 0）： */
+const MUSIC = {
+  el: bgm,
+  CONVERGE_END: 4.90,
+  GROUP_START: [4.90, 10.87, 16.83, 22.90, 29.10, 35.00],
+  TOTAL: 53.57,
+  // 第 6 组内部三行 + 英文的节拍（相对音频 35.00s）
+  G6: [35.00 + 0.6, 35.00 + 3.4, 35.00 + 6.5, 35.00 + 9.5],
+  started: false,
+  useWall: false,   // 自动播放被拦时按真实时间静默走完
+  debugT: null,     // 测试/调试：手动指定当前秒数
+};
+function musicNow() {
+  if (!bgm) return 0;
+  return bgm.currentTime || 0;
+}
+function playMusic() {
+  if (!bgm) return;
+  MUSIC.started = true;
+  bgm.currentTime = 0;
+  const p = bgm.play();
+  if (p && p.catch) p.catch(() => { MUSIC.useWall = true; /* 自动播放被拦则按真实时间静默推进 */ });
+  else MUSIC.useWall = true;
+}
+function pauseMusic() { if (bgm && !bgm.paused) bgm.pause(); }
 let convergeParts = [];
 
 /* ----------------------- 星空背景 ----------------------- */
@@ -291,6 +327,8 @@ function startFinale() {
     const r0 = d * (0.06 + Math.random() * 0.4);
     convergeParts.push({ x: CX + Math.cos(a) * r0, y: CY + Math.sin(a) * r0, delay: Math.random() * 300, dur: 700 + Math.random() * 700 });
   }
+  MUSIC.useWall = false;
+  playMusic();  // 同步开配乐
 }
 
 function renderGroup(g) {
@@ -309,9 +347,10 @@ function renderGroup(g) {
   const isLast = g === FINALE_GROUPS.length - 1;
   fAdv.classList.toggle('vis', !isLast);
   if (grp.special) {
-    // 第 6 组：内部按节拍自动推进（由 drawGroup6 依据时间触发）
-    g6Start = performance.now();
+    // 第 6 组：内部行句由配乐时钟触发（见 drawGroup6），这里仅重置
     g6Tick = -1;
+    g6EnBuilt = false;
+    g6Beat = 0;
   } else {
     // 普通组：交错浮现
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -320,48 +359,32 @@ function renderGroup(g) {
   }
 }
 
-// 第 6 组：节拍推进（tick 0/1/2 → 第 1/2/3 行；2 时叠加英文 + 底部字 + 再看一遍）
-function g6Reveal(tick, grp) {
+// 第 6 组：逐行点亮（tick 0/1/2 → 第 1/2/3 行；英文/字由 drawGroup6 依配乐时钟处理）
+function g6Reveal(tick) {
   if (tick < 0 || tick > 2 || tick === g6Tick) return;
   g6Tick = tick;
   const lines = fVerse.children;
-  if (tick === 2) {
-    for (let i = 0; i < 3; i++) if (lines[i]) lines[i].classList.add('vis');
-    fEn.innerHTML = '';
-    (grp.en || []).forEach(tx => { const d = document.createElement('div'); d.textContent = tx; fEn.appendChild(d); });
-    fEn.classList.add('vis');
-    fTag.classList.add('vis');
-    fAdv.classList.remove('vis');
-    restartBtn.classList.remove('hidden');
-    restartBtn.classList.add('vis');
-  } else {
-    if (lines[tick]) lines[tick].classList.add('vis');
-  }
+  if (lines[tick]) lines[tick].classList.add('vis');
 }
 
-let g6Start = 0, g6Tick = -1;
+let g6Tick = -1, g6EnBuilt = false, g6Beat = 0;
 
-const G6_T = [0, 2200, 4200];   // 第 6 组三个节拍的时间阈值
+// 组间手动推进：跳到相邻组的开始时刻（让配乐与画面同步；点击/→ 快进，← 回退）
 function finaleAdvance(delta) {
   if (finale.phase !== 'show') return;
-  const last = FINALE_GROUPS.length - 1;
-  // 在最后一组（第 6 组）内：向前 = 跳到下一个节拍，向后 = 回上一个节拍
-  if (finale.grp === last && FINALE_GROUPS[last].special) {
-    if (delta > 0 && g6Tick < 2) {
-      const at = performance.now() - g6Start;
-      g6Start += at - G6_T[g6Tick + 1];   // 让阶段时间对齐到下一拍
-    } else if (delta < 0 && g6Tick > 0) {
-      const at = performance.now() - g6Start;
-      g6Start -= G6_T[g6Tick] - G6_T[g6Tick - 1]; // 回退一拍
-    }
-    return;
+  const t0 = bgm && bgm.readyState >= 2 ? bgm.currentTime : finaleClock();
+  const cur = finaleGroupForClock(t0);
+  let g = Math.max(0, Math.min(FINALE_GROUPS.length - 1, cur + delta));
+  if (g === cur && g === FINALE_GROUPS.length - 1) return;   // 已到第 6 组
+  seekTo(Math.max(0, MUSIC.GROUP_START[g] + 0.05));
+}
+
+function seekTo(sec) {
+  if (bgm && bgm.readyState >= 2) { bgm.currentTime = sec; if (bgm.paused) bgm.play().catch(()=>{}); }
+  else {   // 无音频时直接渲染对应组
+    const tgt = finaleGroupForClock(sec);
+    if (tgt >= 0 && tgt !== finale.grp) { finale.grp = tgt; renderGroup(tgt); }
   }
-  let g = finale.grp + delta;
-  if (g < 0) g = 0;
-  if (g > last) g = last;
-  if (g === finale.grp) return;
-  finale.grp = g;
-  renderGroup(g);
 }
 
 /* 回放（终章按钮） */
@@ -517,9 +540,9 @@ function drawFinale(now) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(CX, CY, glowR, 0, Math.PI * 2); ctx.fill();
     glowDot(CX, CY, orbR * 0.9, '#fffef6', 'rgba(255,244,220,0.9)');
 
-    if (el > 2000) {
+    // 汇聚时长对齐配乐的白屏（0 → CONVERGE_END）
+    if (finaleClock() >= MUSIC.CONVERGE_END) {
       finale.phase = 'show';
-      finale.grp = 0;
       finaleEl.classList.add('on');
       fVerse.classList.remove('g6');
       fVerse.innerHTML = '';
@@ -528,12 +551,21 @@ function drawFinale(now) {
       fAdv.classList.add('vis');
       restartBtn.classList.remove('vis');
       restartBtn.classList.add('hidden');
-      renderGroup(0);
+      // grp 由下面按音乐时钟自动推进
     }
     return;
   }
 
-  // ---- phase 'show'：6 组诗 ----
+  // ---- phase 'show'：6 组诗（按配乐节拍自动逐组推进）----
+  if (finale.phase === 'show') {
+    const sec = finaleClock();
+    const tgt = finaleGroupForClock(sec);
+    // 只自动前进、不回退（手动 ← 回看不受影响）
+    if (tgt > finale.grp) {
+      finale.grp = tgt;
+      renderGroup(tgt);
+    }
+  }
   const grp = FINALE_GROUPS[finale.grp] || FINALE_GROUPS[0];
   // 背后常驻：一团温柔光晕（前 5 组）
   drawAmbientGlow(now);
@@ -541,6 +573,21 @@ function drawFinale(now) {
   if (grp.special) {
     drawGroup6(now, grp);
   }
+}
+
+/* 终章统一时钟：能播配乐则跟随音频，否则按真实时间推进（自动播放被拦时仍走完） */
+function finaleClock() {
+  if (MUSIC.debugT != null) return MUSIC.debugT;   // 测试钩子
+  if (bgm && bgm.readyState >= 2 && MUSIC.started && !MUSIC.useWall) {
+    return bgm.currentTime;
+  }
+  return (performance.now() - finale.t0) / 1000;
+}
+function finaleGroupForClock(sec) {
+  if (sec < MUSIC.CONVERGE_END) return -1;
+  let g = 0;
+  for (let i = 0; i < MUSIC.GROUP_START.length; i++) if (sec >= MUSIC.GROUP_START[i]) g = i;
+  return g;
 }
 
 function drawAmbientGlow(now) {
@@ -578,8 +625,6 @@ function initG6() {
 }
 
 function drawGroup6(now, grp) {
-  // 节拍由时间推进（该页不靠按键逐行）
-  const et = now - g6Start;
   const d = Math.min(W, H);
   initG6();
 
@@ -593,12 +638,28 @@ function drawGroup6(now, grp) {
     });
   }
 
-  // 阶段 1：星云/放电 —— 粒子乱连、闪
-  // 阶段 2：大脑剪影 —— 粒子归位成脑，光芒扩散
-  // 阶段 3：金色爆发
-  // 第 6 组的诗行与视觉同步：第 1 行出现即星云，第 2 行即大脑，第 3 行即金色 + 英文
-  const stage = et < 2200 ? 0 : et < 4200 ? 1 : 2;
-  g6Reveal(stage, grp);
+  // 进入第 6 组时先填充英文三行
+  if (!g6EnBuilt && grp.en) {
+    g6EnBuilt = true;
+    fEn.innerHTML = '';
+    grp.en.forEach(tx => { const el2 = document.createElement('div'); el2.textContent = tx; fEn.appendChild(el2); });
+  }
+  // 第 6 组：由配乐时钟驱动（音频 35.0s 进入本组）
+  const t = Math.max(0, finaleClock() - MUSIC.GROUP_START[5]);   // 本组内的秒数
+  // 三个行句在 MUSIC.G6 时刻逐行点亮
+  const beatsPassed = MUSIC.G6.filter(x => x <= finaleClock()).length;   // 0..4
+  if (beatsPassed >= 1) g6Reveal(Math.min(2, beatsPassed - 1));
+  if (beatsPassed >= 4) {   // 英文 + tag + 再看一遍（音频 ~44.5s 之后）
+    fEn.classList.add('vis');
+    fTag.classList.add('vis');
+    fAdv.classList.remove('vis');
+    restartBtn.classList.remove('hidden');
+    restartBtn.classList.add('vis');
+  }
+
+  // 视觉阶段：0 星云 → 1 大脑 → 2 金色（分段对应行句）
+  const stage = t < 3.0 ? 0 : t < 6.5 ? 1 : 2;
+  const et = t * 1000;
 
   ctx.globalCompositeOperation = 'lighter';
   const partR = d * 0.5;
@@ -606,13 +667,11 @@ function drawGroup6(now, grp) {
   for (const p of g6Parts) {
     let px = p.x, py = p.y;
     if (stage === 0) {
-      // 漂移 + 闪烁的"星云"
       px += Math.sin(now * 0.0006 + p.tw) * d * 0.012;
       py += Math.cos(now * 0.0007 + p.tw * 1.3) * d * 0.012;
       p.x = px; p.y = py;
     } else if (stage >= 1) {
-      // 向大脑目标收敛
-      const sp = easeOut(clamp((et - 1500) / 1200, 0, 1));
+      const sp = easeOut(clamp((t - 3.0) / 1.4, 0, 1));
       px = lerp(p.x, p.target.x, sp);
       py = lerp(p.y, p.target.y, sp);
       p.x = px; p.y = py;
@@ -622,7 +681,6 @@ function drawGroup6(now, grp) {
     dot(px, py, (stage === 2 ? 1.4 : 1) + tw, hsla(hue, 90, 70, stage === 2 ? 0.9 : 0.5 + 0.3 * tw));
   }
 
-  // 连线（粒子间相近则连，形成神经网）
   if (stage === 0) {
     const linkR = partR * 0.14;
     for (let i = 0; i < g6Parts.length; i += 1) {
@@ -634,7 +692,6 @@ function drawGroup6(now, grp) {
       }
     }
   } else if (stage === 1 || stage === 2) {
-    // 大脑轮廓的连线更密
     const linkR = d * 0.06;
     for (let i = 0; i < g6Parts.length; i += 2) {
       const a = g6Parts[i];
@@ -646,18 +703,15 @@ function drawGroup6(now, grp) {
     }
   }
 
-  // 阶段 2 光芒扩散 & 大脑淡光
   if (stage === 1) {
-    const spread = clamp((et - 1500) / 2200, 0, 1);
-    ctx.globalCompositeOperation = 'lighter';
+    const spread = clamp((t - 3.0) / 3.5, 0, 1);
     ctx.strokeStyle = `rgba(160,205,255,${0.5 * (1 - spread)})`;
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(CX, CY, d * 0.34 * (1 + 0.7 * spread), d * 0.42 * (1 + 0.7 * spread), 0, 0, Math.PI * 2); ctx.stroke();
   }
 
-  // 阶段 3 金色爆发光晕
   if (stage === 2) {
-    const bloom = clamp((et - 3400) / 900, 0, 1);
+    const bloom = clamp((t - 6.5) / 1.5, 0, 1);
     const R = d * 0.5 * (0.7 + 0.5 * bloom);
     const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, R);
     g.addColorStop(0, `rgba(255,240,200,${0.5 * bloom})`);
@@ -668,7 +722,6 @@ function drawGroup6(now, grp) {
   }
   ctx.globalCompositeOperation = 'source-over';
 
-  // 阶段 3 之前为每行提供一个节奏内的小推进（视觉"闪光"）
   if (stage <= 1) {
     const pulse = (et % 1500) / 1500;
     const pr = d * 0.05 + 0.3 * easeOut(pulse) * d * 0.3;
