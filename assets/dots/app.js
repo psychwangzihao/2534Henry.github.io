@@ -380,7 +380,8 @@ function renderGroup(g) {
 /* 普通组（前 5 章）逐行点亮：章节时长均分 4 个 Block
    line0 在第 1 Block（切章即现，与 logo 同拍）
    line1 在第 2 Block
-   line2 在第 3、4 Block */
+   line2 在第 3、4 Block
+   用双 rAF 先让行以隐藏态渲染一帧，再点亮 → CSS 过渡自然淡入 */
 function updateVerseReveal() {
   const g = finale.grp;
   const grp = FINALE_GROUPS[g];
@@ -392,8 +393,10 @@ function updateVerseReveal() {
   let want = 1;
   if (t >= dur * 0.25) want = 2;
   if (t >= dur * 0.5) want = 3;
-  const lines = fVerse.children;
-  for (let i = 0; i < lines.length; i++) lines[i].classList.toggle('vis', i < want);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const lines = fVerse.children;
+    for (let i = 0; i < lines.length; i++) lines[i].classList.toggle('vis', i < want);
+  }));
 }
 
 // 第 6 组：逐行点亮（tick 0/1/2 → 第 1/2/3 行；英文/字由 drawGroup6 依配乐时钟处理）
