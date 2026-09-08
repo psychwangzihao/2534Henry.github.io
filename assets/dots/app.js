@@ -139,7 +139,7 @@ const MUSIC = {
   GROUP_START: [4.90, 10.87, 16.83, 22.90, 29.10, 35.00],
   TOTAL: 53.57,
   // 第 6 组内部三行 + 英文的节拍（相对音频 35.00s）
-  G6: [35.00 + 0.6, 35.00 + 3.4, 35.00 + 6.5, 35.00 + 9.5],
+  G6: [35.00 + 0.3, 35.00 + 2.2, 35.00 + 4.2, 35.00 + 6.4],
   started: false,
   useWall: false,   // 自动播放被拦时按真实时间静默走完
   debugT: null,     // 测试/调试：手动指定当前秒数
@@ -362,7 +362,7 @@ function renderGroup(g) {
     const d = document.createElement('div');
     d.className = 'v-line' + (grp.warm != null && li === grp.warm ? ' warm' : '');
     d.textContent = ln;
-    d.style.transitionDelay = (li * 0.32) + 's';
+    d.style.transitionDelay = (li * 0.05) + 's';   // 极短错峰，基本同一拍
     fVerse.appendChild(d);
   });
   const isLast = g === FINALE_GROUPS.length - 1;
@@ -373,10 +373,8 @@ function renderGroup(g) {
     g6EnBuilt = false;
     g6Beat = 0;
   } else {
-    // 普通组：交错浮现
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      [...fVerse.children].forEach((el, li) => setTimeout(() => el.classList.add('vis'), 150 + li * 380));
-    }));
+    // 普通组：切换当拍整组浮现（无 150ms+380ms 逐行延迟，避免比音乐晚）
+    [...fVerse.children].forEach(el => el.classList.add('vis'));
   }
 }
 
@@ -670,7 +668,7 @@ function drawGroup6(now, grp) {
   // 三个行句在 MUSIC.G6 时刻逐行点亮
   const beatsPassed = MUSIC.G6.filter(x => x <= finaleClock()).length;   // 0..4
   if (beatsPassed >= 1) g6Reveal(Math.min(2, beatsPassed - 1));
-  if (beatsPassed >= 4) {   // 英文 + tag + 再看一遍（音频 ~44.5s 之后）
+  if (beatsPassed >= 4) {   // 英文 + tag + 再看一遍（音频 ~41.4s，第 6 组快节奏收尾）
     fEn.classList.add('vis');
     fTag.classList.add('vis');
     fAdv.classList.remove('vis');
@@ -678,8 +676,8 @@ function drawGroup6(now, grp) {
     restartBtn.classList.add('vis');
   }
 
-  // 视觉阶段：0 星云 → 1 大脑 → 2 金色（分段对应行句）
-  const stage = t < 3.0 ? 0 : t < 6.5 ? 1 : 2;
+  // 视觉阶段：0 星云 → 1 大脑 → 2 金色（分段对应行句，整体加快）
+  const stage = t < 1.6 ? 0 : t < 3.4 ? 1 : 2;
   const et = t * 1000;
 
   ctx.globalCompositeOperation = 'lighter';
@@ -692,7 +690,7 @@ function drawGroup6(now, grp) {
       py += Math.cos(now * 0.0007 + p.tw * 1.3) * d * 0.012;
       p.x = px; p.y = py;
     } else if (stage >= 1) {
-      const sp = easeOut(clamp((t - 3.0) / 1.4, 0, 1));
+      const sp = easeOut(clamp((t - 1.4) / 1.2, 0, 1));
       px = lerp(p.x, p.target.x, sp);
       py = lerp(p.y, p.target.y, sp);
       p.x = px; p.y = py;
@@ -725,14 +723,14 @@ function drawGroup6(now, grp) {
   }
 
   if (stage === 1) {
-    const spread = clamp((t - 3.0) / 3.5, 0, 1);
+    const spread = clamp((t - 1.6) / 1.6, 0, 1);
     ctx.strokeStyle = `rgba(160,205,255,${0.5 * (1 - spread)})`;
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(CX, CY, d * 0.34 * (1 + 0.7 * spread), d * 0.42 * (1 + 0.7 * spread), 0, 0, Math.PI * 2); ctx.stroke();
   }
 
   if (stage === 2) {
-    const bloom = clamp((t - 6.5) / 1.5, 0, 1);
+    const bloom = clamp((t - 3.4) / 1.0, 0, 1);
     const R = d * 0.5 * (0.7 + 0.5 * bloom);
     const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, R);
     g.addColorStop(0, `rgba(255,240,200,${0.5 * bloom})`);
@@ -744,7 +742,7 @@ function drawGroup6(now, grp) {
   ctx.globalCompositeOperation = 'source-over';
 
   if (stage <= 1) {
-    const pulse = (et % 1500) / 1500;
+    const pulse = (et % 700) / 700;
     const pr = d * 0.05 + 0.3 * easeOut(pulse) * d * 0.3;
     ctx.strokeStyle = `rgba(255,214,140,${0.25 * (1 - pulse)})`;
     ctx.lineWidth = 1.5;
