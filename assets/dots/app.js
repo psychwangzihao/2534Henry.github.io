@@ -367,13 +367,12 @@ function renderGroup(g) {
   });
   const isLast = g === FINALE_GROUPS.length - 1;
   fAdv.classList.toggle('vis', !isLast);
+  verseWant = 0;   // 切组：重置揭示计数（避免上一组的延迟回调误点亮本组）
   if (grp.special) {
     // 第 6 组：内部行句由配乐时钟触发（见 drawGroup6），这里仅重置
     g6Tick = -1;
     g6EnBuilt = false;
     g6Beat = 0;
-  } else {
-    // 普通组：文字逐行浮现由 updateVerseReveal 依 Block 节奏点亮（此处保持隐藏）
   }
 }
 
@@ -381,7 +380,9 @@ function renderGroup(g) {
    line0 在第 1 Block（切章即现，与 logo 同拍）
    line1 在第 2 Block
    line2 在第 3、4 Block
-   用双 rAF 先让行以隐藏态渲染一帧，再点亮 → CSS 过渡自然淡入 */
+   先用双 rAF 让行以隐藏态渲染一帧，再点亮 → CSS 过渡自然淡入。
+   回调内校验组号，避免切组后的残留回调把本组一次性点亮。 */
+let verseWant = 0;
 function updateVerseReveal() {
   const g = finale.grp;
   const grp = FINALE_GROUPS[g];
@@ -393,18 +394,23 @@ function updateVerseReveal() {
   let want = 1;
   if (t >= dur * 0.25) want = 2;
   if (t >= dur * 0.5) want = 3;
+  if (want <= verseWant) return;      // 只增不减
+  const target = want;
   requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (finale.grp !== g || FINALE_GROUPS[g].special) return;   // 组已切换则放弃
     const lines = fVerse.children;
-    for (let i = 0; i < lines.length; i++) lines[i].classList.toggle('vis', i < want);
+    for (let i = verseWant; i < Math.min(target, lines.length); i++) lines[i].classList.add('vis');
+    verseWant = Math.max(verseWant, target);
   }));
 }
 
 // 第 6 组：逐行点亮（tick 0/1/2 → 第 1/2/3 行；英文/字由 drawGroup6 依配乐时钟处理）
+// 累积点亮（若某帧节拍跳跃，补亮中间行），只增不减
 function g6Reveal(tick) {
-  if (tick < 0 || tick > 2 || tick === g6Tick) return;
+  if (tick < 0 || tick > 2 || tick <= g6Tick) return;
   g6Tick = tick;
   const lines = fVerse.children;
-  if (lines[tick]) lines[tick].classList.add('vis');
+  for (let i = 0; i <= tick && i < lines.length; i++) lines[i].classList.add('vis');
 }
 
 let g6Tick = -1, g6EnBuilt = false, g6Beat = 0;
@@ -699,8 +705,9 @@ function drawGroup6(now, grp) {
     restartBtn.classList.add('vis');
   }
 
-  // 视觉阶段：0 星云 → 1 大脑 → 2 金色（分段对应行句，整体加快）
-  const stage = t < 1.6 ? 0 : t < 3.4 ? 1 : 2;
+  // 视觉阶段：0 星云 → 1 大脑 → 2 金色（与三行节拍对齐，动画留出层次感）
+  //   第 1 句(+0.3s) 起进入星云；第 2 句(+2.2s) 起收敛成大脑；第 3 句(+4.2s) 起金色爆发
+  const stage = t < 2.1 ? 0 : t < 4.2 ? 1 : 2;
   const et = t * 1000;
 
   ctx.globalCompositeOperation = 'lighter';
@@ -713,7 +720,7 @@ function drawGroup6(now, grp) {
       py += Math.cos(now * 0.0007 + p.tw * 1.3) * d * 0.012;
       p.x = px; p.y = py;
     } else if (stage >= 1) {
-      const sp = easeOut(clamp((t - 1.4) / 1.2, 0, 1));
+      const sp = easeOut(clamp((t - 2.1) / 1.6, 0, 1));
       px = lerp(p.x, p.target.x, sp);
       py = lerp(p.y, p.target.y, sp);
       p.x = px; p.y = py;
@@ -746,14 +753,14 @@ function drawGroup6(now, grp) {
   }
 
   if (stage === 1) {
-    const spread = clamp((t - 1.6) / 1.6, 0, 1);
+    const spread = clamp((t - 2.1) / 2.1, 0, 1);
     ctx.strokeStyle = `rgba(160,205,255,${0.5 * (1 - spread)})`;
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(CX, CY, d * 0.34 * (1 + 0.7 * spread), d * 0.42 * (1 + 0.7 * spread), 0, 0, Math.PI * 2); ctx.stroke();
   }
 
   if (stage === 2) {
-    const bloom = clamp((t - 3.4) / 1.0, 0, 1);
+    const bloom = clamp((t - 4.2) / 1.4, 0, 1);
     const R = d * 0.5 * (0.7 + 0.5 * bloom);
     const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, R);
     g.addColorStop(0, `rgba(255,240,200,${0.5 * bloom})`);
@@ -765,7 +772,7 @@ function drawGroup6(now, grp) {
   ctx.globalCompositeOperation = 'source-over';
 
   if (stage <= 1) {
-    const pulse = (et % 700) / 700;
+    const pulse = (et % 1500) / 1500;
     const pr = d * 0.05 + 0.3 * easeOut(pulse) * d * 0.3;
     ctx.strokeStyle = `rgba(255,214,140,${0.25 * (1 - pulse)})`;
     ctx.lineWidth = 1.5;
